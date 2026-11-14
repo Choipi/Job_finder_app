@@ -8,23 +8,25 @@ Le projet est aussi un support d'apprentissage : les étapes qui utilisent un LL
 ( scoring et rédaction ) sont isolées dans des modules dédiés, avec des prompts en
 fichiers séparés et un client mockable pour les tests.
 
-## État actuel — phase 1 terminée
+## État actuel — phases 1 et 2 terminées
 
 - [x] Socle Flask : factory, configuration centralisée, CORS, erreurs JSON
 - [x] `GET /api/health` : état du service, modèles configurés, aucune fuite de clé
 - [x] Front Vue 3 + Vite + TypeScript + Tailwind + Pinia + Vue Router
-- [x] Tableau de bord connecté à l'API, pages de la feuille de route
-- [x] 5 tests backend
+- [x] SQLite via SQLAlchemy, création automatique du schéma au démarrage
+- [x] Profil : identité, présentation, CV, lettre type
+- [x] Import du CV en PDF, extraction du texte, correction manuelle
+- [x] Campagne : critères, sources, période, fréquence, seuil d'affichage
+- [x] 22 tests backend (profil, CV, campagne, health)
 
-Prochaines phases : profil et campagne, client LLM et lettres, connecteurs,
-scoring, interface des offres.
+Prochaines phases : client LLM et lettres, connecteurs, scoring, interface des offres.
 
 ## Stack
 
 | Couche | Choix |
 |---|---|
 | Front | Vue 3, Vite 6, TypeScript, Tailwind 3, Pinia, Vue Router |
-| Back | Python 3.11, Flask 3, SQLite (phase 2) |
+| Back | Python 3.11, Flask 3, SQLAlchemy 2, SQLite |
 | LLM | OpenCode Go, via une API compatible OpenAI |
 | Collecte | APIs officielles puis scraping ciblé (requests/Playwright) |
 
@@ -77,29 +79,70 @@ curl http://127.0.0.1:5173/api/health   # via le proxy Vite
 ## Tests et build
 
 ```bash
-make test    # pytest, 5 tests
+make test    # pytest, 22 tests
 make build   # vue-tsc + build de production
 ```
+
+## API
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/health` | état du service, sans secret |
+| GET / PUT | `/api/profile` | lire / enregistrer le profil |
+| POST / DELETE | `/api/profile/cv` | importer un CV PDF / le supprimer |
+| GET / PUT | `/api/campaign` | lire / enregistrer la campagne |
+| GET | `/api/sources` | catalogue des 7 sources |
+
+Les erreurs de validation renvoient `400` avec un objet `fields` :
+
+```json
+{
+  "error": {
+    "code": 400,
+    "name": "Validation Error",
+    "message": "Certains champs sont invalides.",
+    "fields": { "ends_on": "La date de fin doit être postérieure à la date de début." }
+  }
+}
+```
+
+Le front s'en sert pour afficher les messages sous les bons champs.
 
 ## Structure
 
 ```
 backend/
   app/
-    __init__.py        # factory Flask + gestion d'erreurs JSON
+    __init__.py        # factory Flask, stockage, gestion d'erreurs JSON
     config.py          # lecture unique des variables d'environnement
-    api/               # blueprints, routes /api
-  tests/               # pytest + client de test Flask
-  run.py               # point d'entrée de développement
+    extensions.py      # instance SQLAlchemy partagée
+    models.py          # Profile et Campaign (singletons)
+    serializers.py     # sortie JSON explicite, sans chemin de fichier
+    validation.py      # nettoyage et collecte d'erreurs par champ
+    sources.py         # catalogue des sources
+    services/cv.py     # stockage du PDF + extraction pypdf
+    api/               # blueprints health, profile, campaign
+  tests/               # 22 tests, dont génération de PDF pour l'extraction
+  run.py
 frontend/
   src/
     api/               # client fetch typé, types de l'API
-    components/        # briques d'interface réutilisables
-    pages/             # une page par route
-    router/            # routes et métadonnées
-    stores/            # état Pinia
+    components/        # FormSection, TagInput, StatusPill…
+    pages/             # Profil, Campagne, Offres, Réglages, Dashboard
+    stores/            # health, profile, campaign
+    router/
 .env.example           # toutes les variables, valeurs vides
 ```
+
+## Données locales
+
+- Base : `backend/instance/job_finder.db`
+- CV importés : `backend/uploads/cv/`
+- Ces deux dossiers sont ignorés par Git.
+
+Pour repartir de zéro, arrêter Flask puis supprimer `backend/instance/job_finder.db`
+et `backend/uploads/cv/`. Le schéma et la campagne par défaut sont recréés au
+prochain démarrage.
 
 ## Configuration
 
@@ -113,6 +156,8 @@ Toutes les variables sont documentées dans `.env.example`. Les principales :
 | `LETTER_MODEL` | modèle chargé de rédiger les lettres |
 | `MAX_SCORING_PER_SCAN` | garde-fou du nombre d'appels LLM par scan |
 | `CORS_ORIGINS` | origines autorisées, séparées par des virgules |
+| `DATABASE_URL` | vide = SQLite dans `backend/instance/` |
+| `UPLOAD_DIR` | vide = `backend/uploads/` |
 
 ### Sécurité de la clé
 
@@ -124,7 +169,7 @@ Toutes les variables sont documentées dans `.env.example`. Les principales :
 ## Feuille de route
 
 1. **Socle** — fait.
-2. **Profil & campagne** — CV PDF, lettre type, critères, durée.
+2. **Profil & campagne** — fait.
 3. **LLM & lettres** — client OpenCode Go, modèles, génération éditable.
 4. **Connecteurs APIs** — France Travail, Adzuna, Welcome to the Jungle.
 5. **Scrapers** — HelloWork, APEC, Indeed, LinkedIn.

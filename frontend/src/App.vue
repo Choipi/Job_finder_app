@@ -16,8 +16,8 @@ const route = useRoute()
 const nav: NavItem[] = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/offres', label: 'Offres', icon: Briefcase, phase: '7' },
-  { to: '/profil', label: 'Profil', icon: UserRound, phase: '2' },
-  { to: '/campagne', label: 'Campagne', icon: Target, phase: '2' },
+  { to: '/profil', label: 'Profil', icon: UserRound },
+  { to: '/campagne', label: 'Campagne', icon: Target },
   { to: '/reglages', label: 'Réglages', icon: Settings, phase: '3' },
 ]
 

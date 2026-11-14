@@ -7,13 +7,17 @@ application per test with a custom `Settings` instance.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 from flask import Flask, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
+from . import models  # noqa: F401 - imported so SQLAlchemy knows the tables
 from .api import register_blueprints
 from .config import Settings
+from .errors import ValidationError
+from .extensions import db
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -26,14 +30,24 @@ def create_app(settings: Settings | None = None) -> Flask:
         DEBUG=settings.debug,
         MAX_CONTENT_LENGTH=settings.max_upload_mb * 1024 * 1024,
         JSON_SORT_KEYS=False,
+        SQLALCHEMY_DATABASE_URI=settings.database_url,
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
+        UPLOAD_DIR=str(settings.upload_dir),
     )
     # Services read settings through `current_app.extensions["settings"]`.
     app.extensions["settings"] = settings
 
     CORS(app, resources={r"/api/*": {"origins": settings.cors_origins}})
 
+    _prepare_storage(settings)
+    db.init_app(app)
+
     register_blueprints(app)
     _register_error_handlers(app)
+
+    with app.app_context():
+        db.create_all()
 
     logging.basicConfig(
         level=logging.DEBUG if settings.debug else logging.INFO,
@@ -43,8 +57,21 @@ def create_app(settings: Settings | None = None) -> Flask:
     return app
 
 
+def _prepare_storage(settings: Settings) -> None:
+    """Create the folders SQLite and the CV uploads need, before first use."""
+    settings.upload_dir.mkdir(parents=True, exist_ok=True)
+
+    if settings.database_url.startswith("sqlite:///"):
+        database_file = Path(settings.database_url.removeprefix("sqlite:///"))
+        database_file.parent.mkdir(parents=True, exist_ok=True)
+
+
 def _register_error_handlers(app: Flask) -> None:
     """Return JSON for every API error, even when the client expects HTML."""
+
+    @app.errorhandler(ValidationError)
+    def handle_validation_error(error: ValidationError):
+        return jsonify(error.to_dict()), 400
 
     @app.errorhandler(HTTPException)
     def handle_http_error(error: HTTPException):

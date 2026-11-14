@@ -1,0 +1,136 @@
+"""Database models.
+
+Phase 2 stores exactly two singletons: the user profile and the current
+campaign. Offers, scans and the blacklist arrive in later phases.
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta, timezone
+
+from .extensions import db
+from .sources import SOURCES
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class Profile(db.Model):
+    __tablename__ = "profile"
+
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(80), nullable=False, default="")
+    last_name = db.Column(db.String(80), nullable=False, default="")
+    email = db.Column(db.String(180), nullable=False, default="")
+    phone = db.Column(db.String(40), nullable=False, default="")
+    city = db.Column(db.String(120), nullable=False, default="")
+    headline = db.Column(db.String(160), nullable=False, default="")
+    summary = db.Column(db.Text, nullable=False, default="")
+
+    # CV: file on disk, extracted text in DB (editable by the user).
+    cv_path = db.Column(db.String(500), nullable=False, default="")
+    cv_filename = db.Column(db.String(255), nullable=False, default="")
+    cv_text = db.Column(db.Text, nullable=False, default="")
+    cv_uploaded_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    letter_template = db.Column(db.Text, nullable=False, default="")
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+    @classmethod
+    def get_current(cls) -> "Profile":
+        """Return the singleton profile, creating it on first access."""
+        profile = db.session.get(cls, 1)
+        if profile is None:
+            profile = cls(id=1)
+            db.session.add(profile)
+            db.session.commit()
+        return profile
+
+
+class Campaign(db.Model):
+    __tablename__ = "campaign"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, default="Ma recherche")
+
+    # Search criteria, stored as JSON arrays to keep SQLite simple.
+    keywords = db.Column(db.JSON, nullable=False, default=list)
+    locations = db.Column(db.JSON, nullable=False, default=list)
+    contract_types = db.Column(db.JSON, nullable=False, default=lambda: ["CDI"])
+    remote = db.Column(db.String(20), nullable=False, default="any")
+    radius_km = db.Column(db.Integer, nullable=False, default=30)
+
+    # Collection settings.
+    sources = db.Column(
+        db.JSON,
+        nullable=False,
+        default=lambda: [source["id"] for source in SOURCES if source["enabled_by_default"]],
+    )
+    starts_on = db.Column(db.Date, nullable=True)
+    ends_on = db.Column(db.Date, nullable=True)
+    frequency_hours = db.Column(db.Integer, nullable=False, default=6)
+    is_paused = db.Column(db.Boolean, nullable=False, default=False)
+
+    # Display filter only: the UI shows every offer by default.
+    score_threshold = db.Column(db.Integer, nullable=False, default=0)
+
+    # Per-task model choice, falling back to the values from .env.
+    scoring_model = db.Column(db.String(120), nullable=False, default="")
+    letter_model = db.Column(db.String(120), nullable=False, default="")
+
+    last_scan_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+    @classmethod
+    def get_current(cls) -> "Campaign":
+        """Return the single campaign, creating a sensible default once."""
+        campaign = db.session.get(cls, 1)
+        if campaign is None:
+            today = date.today()
+            campaign = cls(
+                id=1,
+                name="Ma recherche",
+                keywords=[],
+                locations=[],
+                contract_types=["CDI"],
+                remote="any",
+                radius_km=30,
+                sources=[
+                    source["id"] for source in SOURCES if source["enabled_by_default"]
+                ],
+                starts_on=today,
+                ends_on=today + timedelta(days=30),
+                frequency_hours=6,
+                score_threshold=0,
+            )
+            db.session.add(campaign)
+            db.session.commit()
+        return campaign
+
+    @property
+    def status(self) -> str:
+        """Derived state, never stored: one source of truth."""
+        if self.is_paused:
+            return "paused"
+        if self.starts_on is None or self.ends_on is None:
+            return "draft"
+        today = date.today()
+        if today < self.starts_on:
+            return "scheduled"
+        if today > self.ends_on:
+            return "finished"
+        return "active"
+
+    @property
+    def days_remaining(self) -> int | None:
+        if self.ends_on is None:
+            return None
+        return max((self.ends_on - date.today()).days, 0)

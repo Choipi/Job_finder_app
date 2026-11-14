@@ -64,6 +64,15 @@ class Settings:
     max_upload_mb: int = field(default_factory=lambda: int(os.getenv("MAX_UPLOAD_MB", "10")))
     max_scoring_per_scan: int = field(default_factory=lambda: int(os.getenv("MAX_SCORING_PER_SCAN", "150")))
 
+    # --- Persistence -------------------------------------------------------
+    database_url: str = field(
+        default_factory=lambda: os.getenv("DATABASE_URL")
+        or f"sqlite:///{BACKEND_DIR / 'instance' / 'job_finder.db'}"
+    )
+    upload_dir: Path = field(
+        default_factory=lambda: Path(os.getenv("UPLOAD_DIR") or BACKEND_DIR / "uploads")
+    )
+
     @property
     def llm_configured(self) -> bool:
         return bool(self.opencode_base_url and self.opencode_api_key)

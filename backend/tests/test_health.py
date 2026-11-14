@@ -13,7 +13,8 @@ def test_health_returns_ok(client):
     assert body["service"] == "Job Finder API"
     assert body["version"] == "0.1.0"
     assert "time" in body
-    assert body["features"]["database"] is False
+    assert body["features"]["database"] is True
+    assert body["features"]["profile"] is True
 
 
 def test_health_reports_llm_unconfigured_by_default(client):

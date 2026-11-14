@@ -70,13 +70,13 @@ const roadmap: RoadmapStep[] = [
     phase: '2',
     title: 'Profil & campagne',
     detail: 'CV PDF, lettre type, critères de recherche, durée.',
-    state: 'current',
+    state: 'done',
   },
   {
     phase: '3',
     title: 'LLM & lettres',
     detail: 'Client OpenCode Go, sélection des modèles, génération.',
-    state: 'next',
+    state: 'current',
   },
   {
     phase: '4',
@@ -125,16 +125,16 @@ const stepDot: Record<StepState, string> = {
             :label="apiLabel"
             :pulse="health.status === 'loading'"
           />
-          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Le socle est en place.</h2>
+          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Le socle et le profil sont en place.</h2>
           <p class="mt-2 text-sm leading-6 text-neutral-600">
-            Flask expose une API JSON et Vue affiche son état en temps réel. La suite ajoute le
-            profil, la collecte multi-sources, le scoring par LLM et la génération de lettres.
+            Le CV est extrait, le profil et la campagne sont enregistrés en base. La suite branche
+            le LLM, la collecte multi-sources et le scoring des offres.
           </p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
-          <RouterLink to="/profil" class="btn-primary">
-            Prochaine étape : le profil
+          <RouterLink to="/campagne" class="btn-primary">
+            Configurer la campagne
             <ArrowRight :size="16" />
           </RouterLink>
           <button
@@ -196,12 +196,15 @@ const stepDot: Record<StepState, string> = {
           <div class="grid h-9 w-9 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
             <Database :size="18" :stroke-width="1.9" />
           </div>
-          <StatusPill tone="muted" label="Phase 2" />
+          <StatusPill
+            :tone="health.data?.features.database ? 'ok' : 'muted'"
+            :label="health.data?.features.database ? 'Opérationnelle' : 'Phase 2'"
+          />
         </div>
         <p class="label mt-4">Base de données</p>
         <p class="mt-1 text-lg font-semibold tracking-tight">SQLite</p>
         <p class="mt-1 text-xs leading-5 text-neutral-500">
-          Profil, campagne, offres, scans et historique.
+          Profil et campagne persistés dans <code class="font-mono">backend/instance</code>.
         </p>
       </article>
 
@@ -229,7 +232,7 @@ const stepDot: Record<StepState, string> = {
             <p class="mt-0.5 text-xs text-neutral-500">Sept étapes, chacune utilisable en l’état.</p>
           </div>
           <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-500">
-            1 / 7
+            2 / 7
           </span>
         </div>
 

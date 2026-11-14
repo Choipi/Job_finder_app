@@ -7,8 +7,13 @@ from app.config import Settings
 
 
 @pytest.fixture()
-def app():
-    application = create_app(Settings(debug=True))
+def app(tmp_path):
+    settings = Settings(
+        debug=True,
+        database_url=f"sqlite:///{tmp_path / 'test.db'}",
+        upload_dir=tmp_path / "uploads",
+    )
+    application = create_app(settings)
     application.config.update(TESTING=True)
     return application
 

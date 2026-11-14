@@ -28,8 +28,8 @@ def create_health_blueprint() -> Blueprint:
                 "llm": settings.public_llm_config,
                 # Flipped to True as each phase lands. The dashboard reads this.
                 "features": {
-                    "database": False,
-                    "profile": False,
+                    "database": True,
+                    "profile": True,
                     "collectors": False,
                     "scoring": False,
                     "scheduler": False,

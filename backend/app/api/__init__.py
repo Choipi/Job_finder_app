@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from flask import Blueprint, Flask, current_app, jsonify
 
+from .campaign import create_campaign_blueprint
 from .health import create_health_blueprint
+from .profile import create_profile_blueprint
 
 
 def create_api_blueprint() -> Blueprint:
@@ -26,11 +28,17 @@ def create_api_blueprint() -> Blueprint:
                 "version": settings.version,
                 "endpoints": {
                     "health": "/api/health",
+                    "profile": "/api/profile",
+                    "cv": "/api/profile/cv",
+                    "campaign": "/api/campaign",
+                    "sources": "/api/sources",
                 },
             }
         )
 
     api.register_blueprint(create_health_blueprint())
+    api.register_blueprint(create_profile_blueprint())
+    api.register_blueprint(create_campaign_blueprint())
     return api
 
 
