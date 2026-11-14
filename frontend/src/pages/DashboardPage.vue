@@ -48,7 +48,11 @@ const apiLabel = computed(() => {
 
 const apiValue = computed(() => (health.data ? `v${health.data.version}` : '—'))
 
-const llmConfigured = computed(() => health.data?.llm.configured ?? false)
+const llmReady = computed(() => health.data?.llm.ready ?? false)
+const llmMock = computed(() => health.data?.llm.mock ?? false)
+const llmLabel = computed(() =>
+  llmMock.value ? 'Mode démo' : llmReady.value ? 'Prêt' : 'À configurer',
+)
 
 const lastChecked = computed(() => {
   if (!health.lastCheckedAt) return 'jamais'
@@ -76,13 +80,13 @@ const roadmap: RoadmapStep[] = [
     phase: '3',
     title: 'LLM & lettres',
     detail: 'Client OpenCode Go, sélection des modèles, génération.',
-    state: 'current',
+    state: 'done',
   },
   {
     phase: '4',
     title: 'Connecteurs APIs',
     detail: 'France Travail, Adzuna, Welcome to the Jungle.',
-    state: 'next',
+    state: 'current',
   },
   {
     phase: '5',
@@ -125,16 +129,16 @@ const stepDot: Record<StepState, string> = {
             :label="apiLabel"
             :pulse="health.status === 'loading'"
           />
-          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Le socle et le profil sont en place.</h2>
+          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Le LLM rédige les lettres.</h2>
           <p class="mt-2 text-sm leading-6 text-neutral-600">
-            Le CV est extrait, le profil et la campagne sont enregistrés en base. La suite branche
-            le LLM, la collecte multi-sources et le scoring des offres.
+            Le profil, le CV et la campagne alimentent un prompt versionné. Chaque appel est
+            journalisé avec ses tokens, sa latence et son coût, et la lettre reste éditable.
           </p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
-          <RouterLink to="/campagne" class="btn-primary">
-            Configurer la campagne
+          <RouterLink to="/lettres" class="btn-primary">
+            Générer une lettre
             <ArrowRight :size="16" />
           </RouterLink>
           <button
@@ -177,17 +181,17 @@ const stepDot: Record<StepState, string> = {
             <Sparkles :size="18" :stroke-width="1.9" />
           </div>
           <StatusPill
-            :tone="llmConfigured ? 'ok' : 'warn'"
-            :label="llmConfigured ? 'Configuré' : 'À configurer'"
+            :tone="llmMock ? 'warn' : llmReady ? 'ok' : 'warn'"
+            :label="llmLabel"
           />
         </div>
         <p class="label mt-4">OpenCode Go</p>
         <p class="mt-1 truncate font-mono text-sm font-medium">
-          {{ health.data?.llm.scoring_model ?? '—' }}
+          {{ health.data?.llm.letter_model ?? '—' }}
         </p>
         <p class="mt-1 text-xs leading-5 text-neutral-500">
-          Lettre : {{ health.data?.llm.letter_model ?? '—' }} ·
-          {{ llmConfigured ? 'clé détectée' : 'clé absente' }}
+          {{ health.data?.llm.provider ?? '—' }} ·
+          {{ llmMock ? 'réponses simulées' : llmReady ? 'clé détectée' : 'clé absente' }}
         </p>
       </article>
 
@@ -232,7 +236,7 @@ const stepDot: Record<StepState, string> = {
             <p class="mt-0.5 text-xs text-neutral-500">Sept étapes, chacune utilisable en l’état.</p>
           </div>
           <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-500">
-            2 / 7
+            3 / 7
           </span>
         </div>
 
@@ -307,19 +311,22 @@ const stepDot: Record<StepState, string> = {
             <dt class="text-neutral-500">Clé API</dt>
             <dd class="font-medium">
               <StatusPill
-                :tone="llmConfigured ? 'ok' : 'warn'"
-                :label="llmConfigured ? 'Détectée côté serveur' : 'Absente'"
+                :tone="llmMock ? 'muted' : llmReady ? 'ok' : 'warn'"
+                :label="llmMock ? 'Non requise (démo)' : llmReady ? 'Détectée côté serveur' : 'Absente'"
               />
             </dd>
           </div>
         </dl>
 
         <div
-          v-if="llmConfigured"
+          v-if="llmReady"
           class="mt-5 flex gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs leading-5 text-emerald-800"
         >
           <ShieldCheck :size="16" class="mt-0.5 shrink-0" />
-          <p>
+          <p v-if="llmMock">
+            Mode démo actif : les réponses sont simulées localement, aucun appel réseau.
+          </p>
+          <p v-else>
             La clé reste dans <code class="font-mono">backend/.env</code>. Le navigateur ne reçoit
             qu’un booléen de configuration.
           </p>

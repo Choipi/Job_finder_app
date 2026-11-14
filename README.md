@@ -8,7 +8,7 @@ Le projet est aussi un support d'apprentissage : les étapes qui utilisent un LL
 ( scoring et rédaction ) sont isolées dans des modules dédiés, avec des prompts en
 fichiers séparés et un client mockable pour les tests.
 
-## État actuel — phases 1 et 2 terminées
+## État actuel — phases 1 à 3 terminées
 
 - [x] Socle Flask : factory, configuration centralisée, CORS, erreurs JSON
 - [x] `GET /api/health` : état du service, modèles configurés, aucune fuite de clé
@@ -17,9 +17,14 @@ fichiers séparés et un client mockable pour les tests.
 - [x] Profil : identité, présentation, CV, lettre type
 - [x] Import du CV en PDF, extraction du texte, correction manuelle
 - [x] Campagne : critères, sources, période, fréquence, seuil d'affichage
-- [x] 22 tests backend (profil, CV, campagne, health)
+- [x] Client LLM OpenCode Go : retries, timeout, JSON mode, coût, télémétrie
+- [x] Génération de lettres, sortie éditable, historique, suppression
+- [x] Sélection des modèles et test de connexion dans les Réglages
+- [x] 47 tests backend (profil, CV, campagne, LLM, lettres, health)
 
-Prochaines phases : client LLM et lettres, connecteurs, scoring, interface des offres.
+Prochaines phases : connecteurs de collecte, scoring des offres, interface des offres.
+
+> Guide pédagogique des appels LLM : [`docs/llm.md`](docs/llm.md).
 
 ## Stack
 
@@ -27,7 +32,7 @@ Prochaines phases : client LLM et lettres, connecteurs, scoring, interface des o
 |---|---|
 | Front | Vue 3, Vite 6, TypeScript, Tailwind 3, Pinia, Vue Router |
 | Back | Python 3.11, Flask 3, SQLAlchemy 2, SQLite |
-| LLM | OpenCode Go, via une API compatible OpenAI |
+| LLM | OpenCode Go, via une API compatible OpenAI, client httpx |
 | Collecte | APIs officielles puis scraping ciblé (requests/Playwright) |
 
 ## Prérequis
@@ -79,7 +84,7 @@ curl http://127.0.0.1:5173/api/health   # via le proxy Vite
 ## Tests et build
 
 ```bash
-make test    # pytest, 22 tests
+make test    # pytest, 47 tests
 make build   # vue-tsc + build de production
 ```
 
@@ -91,7 +96,13 @@ make build   # vue-tsc + build de production
 | GET / PUT | `/api/profile` | lire / enregistrer le profil |
 | POST / DELETE | `/api/profile/cv` | importer un CV PDF / le supprimer |
 | GET / PUT | `/api/campaign` | lire / enregistrer la campagne |
+| PUT | `/api/campaign/models` | choisir les modèles de scoring et de rédaction |
 | GET | `/api/sources` | catalogue des 7 sources |
+| GET / POST | `/api/letters` | historique / générer une lettre |
+| GET / PUT / DELETE | `/api/letters/<id>` | lire / modifier / supprimer |
+| GET | `/api/models` | catalogue des modèles et tarifs |
+| POST | `/api/llm/test` | test de connexion clé + endpoint + modèle |
+| GET | `/api/llm/usage` | tokens, coût estimé et derniers appels |
 
 Les erreurs de validation renvoient `400` avec un objet `fields` :
 
@@ -121,14 +132,16 @@ backend/
     validation.py      # nettoyage et collecte d'erreurs par champ
     sources.py         # catalogue des sources
     services/cv.py     # stockage du PDF + extraction pypdf
-    api/               # blueprints health, profile, campaign
-  tests/               # 22 tests, dont génération de PDF pour l'extraction
+    llm/               # client OpenCode Go, mock, catalogue, télémétrie
+    letters/           # prompt versionné + orchestration de génération
+    api/               # blueprints health, profile, campaign, letters, llm
+  tests/               # 47 tests, dont client HTTP simulé et PDF générés
   run.py
 frontend/
   src/
     api/               # client fetch typé, types de l'API
     components/        # FormSection, TagInput, StatusPill…
-    pages/             # Profil, Campagne, Offres, Réglages, Dashboard
+    pages/             # Dashboard, Offres, Lettres, Profil, Campagne, Réglages
     stores/            # health, profile, campaign
     router/
 .env.example           # toutes les variables, valeurs vides
@@ -155,6 +168,10 @@ Toutes les variables sont documentées dans `.env.example`. Les principales :
 | `SCORING_MODEL` | modèle chargé de noter les offres |
 | `LETTER_MODEL` | modèle chargé de rédiger les lettres |
 | `MAX_SCORING_PER_SCAN` | garde-fou du nombre d'appels LLM par scan |
+| `LLM_PROVIDER` | `opencode_go` (réel) ou `mock` (simulé) |
+| `LLM_TIMEOUT_SECONDS` | délai maximal d'un appel |
+| `LLM_MAX_RETRIES` | nombre de tentatives supplémentaires |
+| `LLM_TEMPERATURE_LETTER` | créativité de la rédaction |
 | `CORS_ORIGINS` | origines autorisées, séparées par des virgules |
 | `DATABASE_URL` | vide = SQLite dans `backend/instance/` |
 | `UPLOAD_DIR` | vide = `backend/uploads/` |
@@ -163,14 +180,23 @@ Toutes les variables sont documentées dans `.env.example`. Les principales :
 
 - La clé vit dans `.env`, ignoré par Git ; seul `.env.example` est versionné.
 - Le navigateur ne la reçoit jamais : `/api/health` expose uniquement
-  `llm.configured`, un booléen.
+  `llm.configured` et `llm.ready`, des booléens.
 - Ne jamais journaliser la configuration complète ni la renvoyer dans une erreur.
+
+### Développer sans clé
+
+```bash
+LLM_PROVIDER=mock make backend
+```
+
+Le client simulé renvoie une lettre déterministe et alimente quand même
+l'historique et la télémétrie.
 
 ## Feuille de route
 
 1. **Socle** — fait.
 2. **Profil & campagne** — fait.
-3. **LLM & lettres** — client OpenCode Go, modèles, génération éditable.
+3. **LLM & lettres** — fait.
 4. **Connecteurs APIs** — France Travail, Adzuna, Welcome to the Jungle.
 5. **Scrapers** — HelloWork, APEC, Indeed, LinkedIn.
 6. **Scoring & scheduler** — déduplication, pré-filtre, scoring, scans planifiés.

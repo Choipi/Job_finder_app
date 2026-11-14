@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import CampaignPage from '@/pages/CampaignPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
+import LettersPage from '@/pages/LettersPage.vue'
 import OffersPage from '@/pages/OffersPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
@@ -32,6 +33,15 @@ const router = createRouter({
       meta: {
         title: 'Offres',
         description: 'Les opportunités collectées pour ta campagne, triées par pertinence.',
+      },
+    },
+    {
+      path: '/lettres',
+      name: 'letters',
+      component: LettersPage,
+      meta: {
+        title: 'Lettres',
+        description: 'Génère, relis et conserve tes lettres de motivation.',
       },
     },
     {

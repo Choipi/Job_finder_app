@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from .config import Settings
-from .models import Campaign, Profile
+from .models import Campaign, GeneratedLetter, LLMCall, Profile
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -59,4 +59,51 @@ def campaign_to_dict(campaign: Campaign, settings: Settings) -> dict[str, object
         "last_scan_at": _iso(campaign.last_scan_at),
         "created_at": _iso(campaign.created_at),
         "updated_at": _iso(campaign.updated_at),
+    }
+
+
+def letter_summary_to_dict(letter: GeneratedLetter) -> dict[str, object]:
+    """Lightweight payload for the history list (no full body)."""
+    return {
+        "id": letter.id,
+        "job_title": letter.job_title,
+        "company": letter.company,
+        "subject": letter.subject,
+        "source_url": letter.source_url,
+        "model": letter.model,
+        "prompt_tokens": letter.prompt_tokens,
+        "completion_tokens": letter.completion_tokens,
+        "cost_usd": letter.cost_usd,
+        "duration_ms": letter.duration_ms,
+        "created_at": _iso(letter.created_at),
+        "updated_at": _iso(letter.updated_at),
+    }
+
+
+def letter_to_dict(letter: GeneratedLetter) -> dict[str, object]:
+    payload = letter_summary_to_dict(letter)
+    payload.update(
+        {
+            "body": letter.body,
+            "job_description": letter.job_description,
+            "instructions": letter.instructions,
+            "prompt_version": letter.prompt_version,
+        }
+    )
+    return payload
+
+
+def llm_call_to_dict(call: LLMCall) -> dict[str, object]:
+    return {
+        "id": call.id,
+        "task": call.task,
+        "model": call.model,
+        "prompt_version": call.prompt_version,
+        "status": call.status,
+        "prompt_tokens": call.prompt_tokens,
+        "completion_tokens": call.completion_tokens,
+        "cost_usd": call.cost_usd,
+        "duration_ms": call.duration_ms,
+        "error": call.error,
+        "created_at": _iso(call.created_at),
     }

@@ -85,6 +85,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 export const apiGet = <T>(path: string): Promise<T> => request<T>(path)
 
+export const apiPost = <T>(path: string, json: unknown): Promise<T> =>
+  request<T>(path, { method: 'POST', json })
+
 export const apiPut = <T>(path: string, json: unknown): Promise<T> =>
   request<T>(path, { method: 'PUT', json })
 

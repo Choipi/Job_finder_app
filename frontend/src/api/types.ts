@@ -1,6 +1,9 @@
 export interface LlmConfig {
   configured: boolean
+  ready: boolean
   base_url_configured: boolean
+  provider: string
+  mock: boolean
   scoring_model: string
   letter_model: string
 }
@@ -8,6 +11,7 @@ export interface LlmConfig {
 export interface HealthFeatures {
   database: boolean
   profile: boolean
+  letters: boolean
   collectors: boolean
   scoring: boolean
   scheduler: boolean
@@ -106,4 +110,110 @@ export interface SourceInfo {
   enabled_by_default: boolean
   note: string
   warning: string | null
+}
+
+export interface ModelPricing {
+  input_per_million: number
+  output_per_million: number
+}
+
+export interface ModelInfo {
+  id: string
+  label: string
+  note: string
+  context_window: number
+  max_output: number
+  pricing: ModelPricing
+  supports_temperature: boolean
+  free: boolean
+  tags: string[]
+}
+
+export interface ModelsResponse {
+  models: ModelInfo[]
+  defaults: { scoring: string; letter: string }
+  provider: string
+  mock: boolean
+}
+
+export interface GeneratedLetterSummary {
+  id: number
+  job_title: string
+  company: string
+  subject: string
+  source_url: string
+  model: string
+  prompt_tokens: number
+  completion_tokens: number
+  cost_usd: number
+  duration_ms: number
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface GeneratedLetter extends GeneratedLetterSummary {
+  body: string
+  job_description: string
+  instructions: string
+  prompt_version: string
+}
+
+export interface LetterUsage {
+  prompt_tokens: number
+  completion_tokens: number
+  cost_usd: number
+  duration_ms: number
+}
+
+export interface LetterResponse {
+  letter: GeneratedLetter
+  usage: LetterUsage
+  context_truncated: string[]
+}
+
+export interface LetterPayload {
+  job_title: string
+  company: string
+  job_description: string
+  source_url: string
+  instructions: string
+  model?: string
+}
+
+export interface LlmCall {
+  id: number
+  task: string
+  model: string
+  prompt_version: string
+  status: 'ok' | 'error'
+  prompt_tokens: number
+  completion_tokens: number
+  cost_usd: number
+  duration_ms: number
+  error: string
+  created_at: string | null
+}
+
+export interface LlmUsage {
+  totals: {
+    calls: number
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+    cost_usd: number
+  }
+  recent: LlmCall[]
+  models: number
+}
+
+export interface LlmTestResult {
+  ok: boolean
+  model: string
+  reply: string
+  duration_ms: number
+  usage: {
+    prompt_tokens: number
+    completion_tokens: number
+    cost_usd: number
+  }
 }

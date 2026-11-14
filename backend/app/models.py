@@ -134,3 +134,48 @@ class Campaign(db.Model):
         if self.ends_on is None:
             return None
         return max((self.ends_on - date.today()).days, 0)
+
+
+class GeneratedLetter(db.Model):
+    __tablename__ = "generated_letter"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Snapshot of the offer: a letter must stay readable even if the offer
+    # is later deleted or never stored (phase 3 has no offers yet).
+    job_title = db.Column(db.String(200), nullable=False, default="")
+    company = db.Column(db.String(200), nullable=False, default="")
+    source_url = db.Column(db.String(500), nullable=False, default="")
+    job_description = db.Column(db.Text, nullable=False, default="")
+    instructions = db.Column(db.Text, nullable=False, default="")
+
+    subject = db.Column(db.String(300), nullable=False, default="")
+    body = db.Column(db.Text, nullable=False, default="")
+
+    model = db.Column(db.String(120), nullable=False, default="")
+    prompt_version = db.Column(db.String(40), nullable=False, default="")
+    prompt_tokens = db.Column(db.Integer, nullable=False, default=0)
+    completion_tokens = db.Column(db.Integer, nullable=False, default=0)
+    cost_usd = db.Column(db.Float, nullable=False, default=0.0)
+    duration_ms = db.Column(db.Integer, nullable=False, default=0)
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+
+class LLMCall(db.Model):
+    __tablename__ = "llm_call"
+
+    id = db.Column(db.Integer, primary_key=True)
+    task = db.Column(db.String(40), nullable=False, default="")
+    model = db.Column(db.String(120), nullable=False, default="")
+    prompt_version = db.Column(db.String(40), nullable=False, default="")
+    status = db.Column(db.String(20), nullable=False, default="ok")
+    prompt_tokens = db.Column(db.Integer, nullable=False, default=0)
+    completion_tokens = db.Column(db.Integer, nullable=False, default=0)
+    cost_usd = db.Column(db.Float, nullable=False, default=0.0)
+    duration_ms = db.Column(db.Integer, nullable=False, default=0)
+    error = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)

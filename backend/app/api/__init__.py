@@ -11,6 +11,8 @@ from flask import Blueprint, Flask, current_app, jsonify
 
 from .campaign import create_campaign_blueprint
 from .health import create_health_blueprint
+from .letters import create_letters_blueprint
+from .llm import create_llm_blueprint
 from .profile import create_profile_blueprint
 
 
@@ -31,7 +33,12 @@ def create_api_blueprint() -> Blueprint:
                     "profile": "/api/profile",
                     "cv": "/api/profile/cv",
                     "campaign": "/api/campaign",
+                    "campaign_models": "/api/campaign/models",
                     "sources": "/api/sources",
+                    "letters": "/api/letters",
+                    "models": "/api/models",
+                    "llm_test": "/api/llm/test",
+                    "llm_usage": "/api/llm/usage",
                 },
             }
         )
@@ -39,6 +46,8 @@ def create_api_blueprint() -> Blueprint:
     api.register_blueprint(create_health_blueprint())
     api.register_blueprint(create_profile_blueprint())
     api.register_blueprint(create_campaign_blueprint())
+    api.register_blueprint(create_letters_blueprint())
+    api.register_blueprint(create_llm_blueprint())
     return api
 
 

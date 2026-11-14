@@ -18,6 +18,7 @@ from .api import register_blueprints
 from .config import Settings
 from .errors import ValidationError
 from .extensions import db
+from .llm import LLMError
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -53,6 +54,10 @@ def create_app(settings: Settings | None = None) -> Flask:
         level=logging.DEBUG if settings.debug else logging.INFO,
         format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
     )
+    # httpx/httpcore are extremely verbose at DEBUG and would drown the
+    # application logs. Keep warnings and errors only.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
 
     return app
 
@@ -72,6 +77,21 @@ def _register_error_handlers(app: Flask) -> None:
     @app.errorhandler(ValidationError)
     def handle_validation_error(error: ValidationError):
         return jsonify(error.to_dict()), 400
+
+    @app.errorhandler(LLMError)
+    def handle_llm_error(error: LLMError):
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": error.status_code,
+                        "name": error.name,
+                        "message": error.message,
+                    }
+                }
+            ),
+            error.status_code,
+        )
 
     @app.errorhandler(HTTPException)
     def handle_http_error(error: HTTPException):

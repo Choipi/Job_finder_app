@@ -56,10 +56,33 @@ class Settings:
     )
 
     # OpenCode Go, reached through an OpenAI-compatible endpoint.
-    opencode_base_url: str = field(default_factory=lambda: os.getenv("OPENCODE_BASE_URL", "").rstrip("/"))
+    opencode_base_url: str = field(
+        default_factory=lambda: (
+            os.getenv("OPENCODE_BASE_URL")
+            or "https://opencode.ai/inference/go/openai/v1"
+        ).rstrip("/")
+    )
     opencode_api_key: str = field(default_factory=lambda: os.getenv("OPENCODE_API_KEY", ""))
     scoring_model: str = field(default_factory=lambda: os.getenv("SCORING_MODEL", "deepseek-v4.1-flash"))
     letter_model: str = field(default_factory=lambda: os.getenv("LETTER_MODEL", "claude-haiku-5-5"))
+
+    # --- LLM runtime -------------------------------------------------------
+    # "opencode_go" for real calls, "mock" to develop without a key.
+    llm_provider: str = field(
+        default_factory=lambda: os.getenv("LLM_PROVIDER", "opencode_go").strip().lower()
+    )
+    llm_timeout_seconds: float = field(
+        default_factory=lambda: float(os.getenv("LLM_TIMEOUT_SECONDS", "60"))
+    )
+    llm_max_retries: int = field(
+        default_factory=lambda: int(os.getenv("LLM_MAX_RETRIES", "2"))
+    )
+    llm_temperature_letter: float = field(
+        default_factory=lambda: float(os.getenv("LLM_TEMPERATURE_LETTER", "0.3"))
+    )
+    llm_session_id: str = field(
+        default_factory=lambda: os.getenv("LLM_SESSION_ID", "job-finder-local")
+    )
 
     max_upload_mb: int = field(default_factory=lambda: int(os.getenv("MAX_UPLOAD_MB", "10")))
     max_scoring_per_scan: int = field(default_factory=lambda: int(os.getenv("MAX_SCORING_PER_SCAN", "150")))
@@ -78,6 +101,11 @@ class Settings:
         return bool(self.opencode_base_url and self.opencode_api_key)
 
     @property
+    def llm_ready(self) -> bool:
+        """True when a call can be attempted: real key present or mock mode."""
+        return self.llm_provider == "mock" or self.llm_configured
+
+    @property
     def public_llm_config(self) -> dict[str, object]:
         """LLM information safe to send to the browser.
 
@@ -86,7 +114,10 @@ class Settings:
         """
         return {
             "configured": self.llm_configured,
+            "ready": self.llm_ready,
             "base_url_configured": bool(self.opencode_base_url),
+            "provider": self.llm_provider,
+            "mock": self.llm_provider == "mock",
             "scoring_model": self.scoring_model,
             "letter_model": self.letter_model,
         }

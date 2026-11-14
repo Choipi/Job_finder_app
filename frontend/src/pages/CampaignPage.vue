@@ -444,7 +444,7 @@ onMounted(load)
           <p class="mt-1 truncate font-mono text-[11px] text-neutral-700">{{ form.letter_model || '—' }}</p>
         </div>
         <p class="text-[11px] leading-5 text-neutral-500 sm:col-span-2">
-          Modifiables dans les réglages à la phase 3. Ils retombent sur les valeurs du fichier
+          Modifiables dans les réglages. Ils retombent sur les valeurs du fichier
           <code class="font-mono">.env</code>.
         </p>
       </div>

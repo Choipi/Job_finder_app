@@ -30,6 +30,7 @@ def create_health_blueprint() -> Blueprint:
                 "features": {
                     "database": True,
                     "profile": True,
+                    "letters": True,
                     "collectors": False,
                     "scoring": False,
                     "scheduler": False,

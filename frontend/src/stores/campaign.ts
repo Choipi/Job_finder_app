@@ -52,7 +52,35 @@ export const useCampaignStore = defineStore('campaign', () => {
     }
   }
 
-  return { campaign, sources, loading, saving, error, load, loadSources, save }
+  async function saveModels(values: {
+    scoring_model: string
+    letter_model: string
+  }): Promise<Campaign> {
+    saving.value = true
+    error.value = null
+    try {
+      const payload = await apiPut<{ campaign: Campaign }>('/campaign/models', values)
+      campaign.value = payload.campaign
+      return payload.campaign
+    } catch (cause) {
+      error.value = messageOf(cause)
+      throw cause
+    } finally {
+      saving.value = false
+    }
+  }
+
+  return {
+    campaign,
+    sources,
+    loading,
+    saving,
+    error,
+    load,
+    loadSources,
+    save,
+    saveModels,
+  }
 })
 
 export function messageOf(cause: unknown): string {

@@ -5,6 +5,7 @@ from __future__ import annotations
 from flask import Blueprint, current_app, jsonify
 
 from ..extensions import db
+from ..llm.catalog import is_known_model
 from ..models import Campaign
 from ..serializers import campaign_to_dict
 from ..sources import SOURCES, SOURCE_IDS
@@ -93,6 +94,26 @@ def create_campaign_blueprint() -> Blueprint:
             setattr(campaign, key, value)
         db.session.commit()
 
+        return jsonify({"campaign": campaign_to_dict(campaign, settings)})
+
+    @bp.put("/campaign/models")
+    def update_campaign_models():
+        data = Validator(request_payload())
+        scoring_model = data.text("scoring_model", "Modèle de scoring", max_length=120, required=True)
+        letter_model = data.text("letter_model", "Modèle de lettre", max_length=120, required=True)
+
+        if scoring_model and not is_known_model(scoring_model):
+            data.add_error("scoring_model", f"Le modèle « {scoring_model} » n’est pas dans le catalogue.")
+        if letter_model and not is_known_model(letter_model):
+            data.add_error("letter_model", f"Le modèle « {letter_model} » n’est pas dans le catalogue.")
+        data.finish()
+
+        campaign = Campaign.get_current()
+        campaign.scoring_model = scoring_model
+        campaign.letter_model = letter_model
+        db.session.commit()
+
+        settings = current_app.extensions["settings"]
         return jsonify({"campaign": campaign_to_dict(campaign, settings)})
 
     return bp
