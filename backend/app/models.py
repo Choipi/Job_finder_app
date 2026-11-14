@@ -148,6 +148,7 @@ class GeneratedLetter(db.Model):
 
     subject = db.Column(db.String(300), nullable=False, default="")
     body = db.Column(db.Text, nullable=False, default="")
+    offer_id = db.Column(db.Integer, nullable=True, index=True)
 
     model = db.Column(db.String(120), nullable=False, default="")
     prompt_version = db.Column(db.String(40), nullable=False, default="")
@@ -253,3 +254,67 @@ class Offer(db.Model):
     updated_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
     )
+
+    score_record = db.relationship(
+        "OfferScore",
+        back_populates="offer",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class OfferScore(db.Model):
+    """Latest LLM evaluation of an offer.
+
+    Kept in a separate table so the scoring prompt version, model and error are
+    auditable without mixing them with the application status of the offer.
+    """
+
+    __tablename__ = "offer_score"
+
+    id = db.Column(db.Integer, primary_key=True)
+    offer_id = db.Column(
+        db.Integer, db.ForeignKey("offer.id"), nullable=False, unique=True, index=True
+    )
+    status = db.Column(db.String(20), nullable=False, default="scored")
+    score = db.Column(db.Integer, nullable=True)
+    reasons = db.Column(db.JSON, nullable=False, default=list)
+    blockers = db.Column(db.JSON, nullable=False, default=list)
+    model = db.Column(db.String(120), nullable=False, default="")
+    prompt_version = db.Column(db.String(40), nullable=False, default="")
+    error = db.Column(db.String(500), nullable=False, default="")
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+    offer = db.relationship("Offer", back_populates="score_record")
+
+
+class OfferBlacklist(db.Model):
+    """Fingerprints the user explicitly deleted; never re-imported."""
+
+    __tablename__ = "offer_blacklist"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fingerprint = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    reason = db.Column(db.String(200), nullable=False, default="deleted_by_user")
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class ScanRun(db.Model):
+    """One collection + scoring pass, manual or scheduled."""
+
+    __tablename__ = "scan_run"
+
+    id = db.Column(db.Integer, primary_key=True)
+    trigger = db.Column(db.String(20), nullable=False, default="manual")
+    status = db.Column(db.String(20), nullable=False, default="running")
+    started_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    finished_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    employers_checked = db.Column(db.Integer, nullable=False, default=0)
+    offers_found = db.Column(db.Integer, nullable=False, default=0)
+    offers_new = db.Column(db.Integer, nullable=False, default=0)
+    offers_scored = db.Column(db.Integer, nullable=False, default=0)
+    errors = db.Column(db.Integer, nullable=False, default=0)
+    detail = db.Column(db.JSON, nullable=False, default=dict)

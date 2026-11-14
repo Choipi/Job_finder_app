@@ -14,7 +14,7 @@ from sqlalchemy import func
 from ..collectors.ats import get_adapter
 from ..collectors.ats.base import AtsError, CollectedOffer
 from ..extensions import db
-from ..models import EmployerSource, Offer
+from ..models import EmployerSource, Offer, OfferBlacklist
 
 SEED_PATH = Path(__file__).parent / "seed_ai_france.json"
 MAX_DESCRIPTION_CHARS = 40_000
@@ -127,6 +127,9 @@ def _upsert_offer(
     location = " ".join(item.location.split())
     fingerprint = offer_fingerprint(title, company, location)
     description = item.description[:MAX_DESCRIPTION_CHARS]
+
+    if OfferBlacklist.query.filter_by(fingerprint=fingerprint).first() is not None:
+        return None
 
     existing = Offer.query.filter_by(fingerprint=fingerprint).one_or_none()
     if existing is not None:

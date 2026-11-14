@@ -27,7 +27,20 @@ class MockLLMClient:
         prompt = "\n".join(message.content for message in messages)
         prompt_tokens = max(len(prompt) // 4, 1)
 
-        if json_mode:
+        if json_mode and ("<criteres>" in prompt or "évalue la pertinence" in prompt):
+            content = json.dumps(
+                {
+                    "score": 72,
+                    "reasons": [
+                        "Compétences techniques alignées avec l’offre.",
+                        "Le niveau d’expérience correspond au profil.",
+                        "Le lieu ou le mode de travail reste compatible.",
+                    ],
+                    "blockers": [],
+                },
+                ensure_ascii=False,
+            )
+        elif json_mode:
             title = _tag(prompt, "poste") or "le poste"
             company = _tag(prompt, "entreprise") or "votre entreprise"
             content = json.dumps(

@@ -131,6 +131,7 @@ function toSummary(letter: GeneratedLetter): GeneratedLetterSummary {
     completion_tokens: letter.completion_tokens,
     cost_usd: letter.cost_usd,
     duration_ms: letter.duration_ms,
+    offer_id: letter.offer_id,
     created_at: letter.created_at,
     updated_at: letter.updated_at,
   }

@@ -288,6 +288,8 @@ Taxonomie d'erreurs utile :
 6. Évaluer sur un jeu d'offres annotées : précision du tri, faux positifs,
    faux négatifs, coût par offre.
 
+Le scoring est détaillé dans [`scoring.md`](scoring.md).
+
 ## 12. Mode démo et tests
 
 Sans clé :

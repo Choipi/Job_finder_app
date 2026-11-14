@@ -100,7 +100,22 @@ Puis l'ajouter dans `collectors/ats/__init__.py`.
 | `frontend/src/pages/EmployersPage.vue` | gestion de la watchlist |
 | `frontend/src/pages/OffersPage.vue` | offres collectées et filtre campagne |
 
-## 7. Commandes
+## 7. Ajout manuel d'une offre
+
+Une annonce trouvée hors ATS peut être ajoutée depuis **Offres → Ajouter une
+offre** :
+
+- intitulé, entreprise, lieu, lien, contrat, remote, texte complet ;
+- empreinte `titre + entreprise + lieu` : une offre identique n'est pas dupliquée ;
+- une offre précédemment supprimée est restaurée et retirée de la blacklist ;
+- l'offre est immédiatement disponible pour le scoring et la lettre ;
+- le bouton **Ajouter et rédiger la lettre** ouvre directement l'éditeur avec
+  l'offre préremplie.
+
+L'ajout manuel désactive le filtre campagne dans l'interface pour que l'offre
+reste visible, même si ses mots-clés ne correspondent pas encore.
+
+## 8. Commandes
 
 ```bash
 cd backend
@@ -111,7 +126,7 @@ flask --app run:app employers-collect --limit 5 --max-offers 50
 
 Ou depuis l'interface : **Employeurs → Détecter 8 ATS / Collecter 5 employeurs**.
 
-## 8. Limites et choix assumés
+## 9. Limites et choix assumés
 
 - **Couverture partielle** : on couvre les employeurs de la watchlist, pas tout le
   marché. Les PME sans ATS restent invisibles.
@@ -127,7 +142,7 @@ Ou depuis l'interface : **Employeurs → Détecter 8 ATS / Collecter 5 employeur
   respecte les délais, on s'identifie, et on ne contourne pas les protections des
   job boards.
 
-## 9. Exercices
+## 10. Exercices
 
 1. Ajouter l'adaptateur Recruitee ou Teamtailor.
 2. Améliorer la déduplication avec le couple `(entreprise, titre, ville)` +

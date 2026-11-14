@@ -20,6 +20,8 @@ from .config import Settings
 from .errors import ValidationError
 from .extensions import db
 from .llm import LLMError
+from .migrations import apply_sqlite_migrations
+from .scheduler import start_scheduler
 
 
 def create_app(settings: Settings | None = None) -> Flask:
@@ -51,6 +53,7 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     with app.app_context():
         db.create_all()
+        apply_sqlite_migrations()
 
     logging.basicConfig(
         level=logging.DEBUG if settings.debug else logging.INFO,
@@ -60,6 +63,8 @@ def create_app(settings: Settings | None = None) -> Flask:
     # application logs. Keep warnings and errors only.
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+    start_scheduler(app)
 
     return app
 

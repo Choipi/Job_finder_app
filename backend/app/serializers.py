@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from .config import Settings
-from .models import Campaign, EmployerSource, GeneratedLetter, LLMCall, Offer, Profile
+from .models import Campaign, EmployerSource, GeneratedLetter, LLMCall, Offer, Profile, ScanRun
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -75,6 +75,7 @@ def letter_summary_to_dict(letter: GeneratedLetter) -> dict[str, object]:
         "completion_tokens": letter.completion_tokens,
         "cost_usd": letter.cost_usd,
         "duration_ms": letter.duration_ms,
+        "offer_id": letter.offer_id,
         "created_at": _iso(letter.created_at),
         "updated_at": _iso(letter.updated_at),
     }
@@ -132,6 +133,7 @@ def employer_to_dict(employer: EmployerSource) -> dict[str, object]:
 
 
 def offer_summary_to_dict(offer: Offer) -> dict[str, object]:
+    score = offer.score_record
     return {
         "id": offer.id,
         "employer_id": offer.employer_id,
@@ -145,6 +147,10 @@ def offer_summary_to_dict(offer: Offer) -> dict[str, object]:
         "apply_url": offer.apply_url,
         "published_at": _iso(offer.published_at),
         "score": offer.score,
+        "score_status": score.status if score else None,
+        "score_reasons": list(score.reasons or []) if score else list(offer.score_reasons or []),
+        "score_blockers": list(score.blockers or []) if score else [],
+        "scored_at": _iso(score.updated_at) if score else None,
         "status": offer.status,
         "created_at": _iso(offer.created_at),
     }
@@ -157,9 +163,27 @@ def offer_to_dict(offer: Offer) -> dict[str, object]:
             "description": offer.description,
             "source_url": offer.source_url,
             "external_id": offer.external_id,
-            "score_reasons": list(offer.score_reasons or []),
+            "score_reasons": list(offer.score_record.reasons or [])
+            if offer.score_record
+            else list(offer.score_reasons or []),
             "last_seen_at": _iso(offer.last_seen_at),
             "updated_at": _iso(offer.updated_at),
         }
     )
     return payload
+
+
+def scan_to_dict(run: ScanRun) -> dict[str, object]:
+    return {
+        "id": run.id,
+        "trigger": run.trigger,
+        "status": run.status,
+        "started_at": _iso(run.started_at),
+        "finished_at": _iso(run.finished_at),
+        "employers_checked": run.employers_checked,
+        "offers_found": run.offers_found,
+        "offers_new": run.offers_new,
+        "offers_scored": run.offers_scored,
+        "errors": run.errors,
+        "detail": run.detail or {},
+    }

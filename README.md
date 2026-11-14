@@ -8,7 +8,7 @@ Le projet est aussi un support d'apprentissage : les étapes qui utilisent un LL
 ( scoring et rédaction ) sont isolées dans des modules dédiés, avec des prompts en
 fichiers séparés et un client mockable pour les tests.
 
-## État actuel — phases 1 à 4 terminées
+## État actuel — application fonctionnelle
 
 - [x] Socle Flask : factory, configuration centralisée, CORS, erreurs JSON
 - [x] `GET /api/health` : état du service, modèles configurés, aucune fuite de clé
@@ -23,11 +23,19 @@ fichiers séparés et un client mockable pour les tests.
 - [x] Watchlist de 200 employeurs IA, découverte d'ATS, collecte directe
 - [x] Adaptateurs Ashby, Greenhouse, Lever, SmartRecruiters, Workable
 - [x] Offres normalisées, dédupliquées, avec lien de candidature employeur
-- [x] 60 tests backend (profil, CV, campagne, LLM, lettres, ATS, employeurs)
+- [x] Ajout manuel d’une offre (texte + lien), avec option « rédiger la lettre »
+- [x] Scoring LLM : pré-filtre, score 0-100, raisons, bloquants
+- [x] Cycle de vie : statuts, suppression réversible, blacklist
+- [x] Lettres liées à une offre, historique et édition
+- [x] Scan manuel et scheduler APScheduler pendant la campagne
+- [x] 73 tests backend
 
-Prochaines phases : job boards en complément, scoring LLM, scheduler, interface avancée.
+Les sources job boards (phase 5) restent optionnelles : WTTJ, HelloWork, APEC,
+Indeed et LinkedIn bloquent ou interdisent l'automatisation. L'application est
+complète sans elles grâce aux ATS employeurs.
 
-> Guides : [`docs/llm.md`](docs/llm.md) pour les appels LLM, [`docs/employers.md`](docs/employers.md) pour la collecte employeurs.
+> Guides : [`llm.md`](docs/llm.md), [`scoring.md`](docs/scoring.md),
+> [`employers.md`](docs/employers.md), [`architecture.md`](docs/architecture.md).
 
 ## Stack
 
@@ -87,7 +95,7 @@ curl http://127.0.0.1:5173/api/health   # via le proxy Vite
 ## Tests et build
 
 ```bash
-make test    # pytest, 60 tests
+make test    # pytest, 73 tests
 make build   # vue-tsc + build de production
 ```
 
@@ -112,7 +120,15 @@ make build   # vue-tsc + build de production
 | POST | `/api/employers/discover` | détecter les ATS par lot |
 | POST | `/api/employers/collect` | collecter les offres par lot |
 | POST | `/api/employers/<id>/collect` | collecter un employeur |
-| GET | `/api/offers` | offres collectées, filtre campagne optionnel |
+| GET | `/api/offers` | offres collectées, filtres et tri |
+| POST | `/api/offers` | ajouter une offre manuellement |
+| POST | `/api/offers/score` | scorer un lot d'offres |
+| PATCH | `/api/offers/<id>` | changer le statut de candidature |
+| DELETE | `/api/offers/<id>` | supprimer + blacklist |
+| POST | `/api/offers/<id>/restore` | restaurer une offre supprimée |
+| POST | `/api/scan` | scan manuel (collecte + scoring) |
+| GET | `/api/scans` | historique des scans |
+| GET | `/api/scheduler` | état du scan automatique |
 
 Les erreurs de validation renvoient `400` avec un objet `fields` :
 
@@ -146,7 +162,11 @@ backend/
     letters/           # prompt versionné + orchestration de génération
     employers/         # watchlist, seed IA France, découverte ATS
     collectors/ats/    # adaptateurs Ashby, Greenhouse, Lever, etc.
-    api/               # blueprints health, profile, campaign, letters, llm, employers
+    scoring/           # pré-filtre + prompt + persistance du score
+    scans.py           # un scan = collecte + scoring + audit
+    scheduler.py       # scan automatique APScheduler
+    migrations.py      # ajout de colonnes SQLite
+    api/               # blueprints health, profile, campaign, letters, llm, employers, scans
   tests/               # 47 tests, dont client HTTP simulé et PDF générés
   run.py
 frontend/
@@ -198,6 +218,10 @@ Toutes les variables sont documentées dans `.env.example`. Les principales :
 | `LLM_TIMEOUT_SECONDS` | délai maximal d'un appel |
 | `LLM_MAX_RETRIES` | nombre de tentatives supplémentaires |
 | `LLM_TEMPERATURE_LETTER` | créativité de la rédaction |
+| `SCHEDULER_ENABLED` | active le scan automatique pendant la campagne |
+| `SCHEDULER_INTERVAL_SECONDS` | fréquence de vérification du scheduler |
+| `SCAN_COLLECT_EMPLOYERS` | employeurs collectés par scan |
+| `SCAN_SCORE_OFFERS` | offres scorées par scan |
 | `CORS_ORIGINS` | origines autorisées, séparées par des virgules |
 | `DATABASE_URL` | vide = SQLite dans `backend/instance/` |
 | `UPLOAD_DIR` | vide = `backend/uploads/` |
@@ -224,9 +248,9 @@ l'historique et la télémétrie.
 2. **Profil & campagne** — fait.
 3. **LLM & lettres** — fait.
 4. **Employeurs & ATS** — fait : watchlist, découverte, collecte directe.
-5. **Job boards & APIs** — WTTJ sitemap, Adzuna et Jooble en complément.
-6. **Scoring & scheduler** — déduplication avancée, pré-filtre, scoring, scans planifiés.
-7. **Interface offres avancée** — score, suppressions, lettres, statuts.
+5. **Job boards & APIs** — optionnel : WTTJ/Adzuna/Jooble, bloqués ou limités.
+6. **Scoring & scheduler** — fait : pré-filtre, scoring, scan manuel et auto.
+7. **Interface offres** — fait : score, statuts, suppression, lettres liées.
 
 ## Collecte : règles assumées
 

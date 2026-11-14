@@ -17,6 +17,7 @@ def app(tmp_path):
         # Explicit empties keep tests independent from the developer's .env.
         opencode_base_url="",
         opencode_api_key="",
+        scheduler_enabled=False,
     )
     application = create_app(settings)
     application.config.update(TESTING=True)

@@ -87,6 +87,20 @@ class Settings:
     max_upload_mb: int = field(default_factory=lambda: int(os.getenv("MAX_UPLOAD_MB", "10")))
     max_scoring_per_scan: int = field(default_factory=lambda: int(os.getenv("MAX_SCORING_PER_SCAN", "150")))
 
+    # --- Scheduler ---------------------------------------------------------
+    scheduler_enabled: bool = field(
+        default_factory=lambda: _as_bool(os.getenv("SCHEDULER_ENABLED"), False)
+    )
+    scheduler_interval_seconds: int = field(
+        default_factory=lambda: int(os.getenv("SCHEDULER_INTERVAL_SECONDS", "60"))
+    )
+    scan_collect_employers: int = field(
+        default_factory=lambda: int(os.getenv("SCAN_COLLECT_EMPLOYERS", "5"))
+    )
+    scan_score_offers: int = field(
+        default_factory=lambda: int(os.getenv("SCAN_SCORE_OFFERS", "20"))
+    )
+
     # --- Persistence -------------------------------------------------------
     database_url: str = field(
         default_factory=lambda: os.getenv("DATABASE_URL")

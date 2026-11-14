@@ -11,16 +11,17 @@ import {
   Sparkles,
   Trash2,
 } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
-import { ApiError } from '@/api/client'
-import type { LetterPayload } from '@/api/types'
+import { apiGet, ApiError } from '@/api/client'
+import type { LetterPayload, OfferDetail } from '@/api/types'
 import FormSection from '@/components/FormSection.vue'
 import { useCampaignStore } from '@/stores/campaign'
 import { useLettersStore } from '@/stores/letters'
 
 const letters = useLettersStore()
 const campaign = useCampaignStore()
+const route = useRoute()
 
 const form = reactive<LetterPayload>({
   job_title: '',
@@ -29,6 +30,9 @@ const form = reactive<LetterPayload>({
   source_url: '',
   instructions: '',
 })
+
+const linkedOffer = ref<OfferDetail | null>(null)
+const offerId = ref<number | null>(null)
 
 const editing = reactive({ subject: '', body: '' })
 const editingInitial = ref('')
@@ -77,10 +81,30 @@ onMounted(async () => {
     if (first) {
       await letters.select(first.id)
     }
+    const queryOffer = Number(route.query.offer)
+    if (Number.isInteger(queryOffer) && queryOffer > 0) {
+      await loadOffer(queryOffer)
+    }
   } catch {
     // The store already holds a readable error.
   }
 })
+
+async function loadOffer(id: number): Promise<void> {
+  try {
+    const payload = await apiGet<{ offer: OfferDetail }>(`/offers/${id}`)
+    const offer = payload.offer
+    linkedOffer.value = offer
+    offerId.value = offer.id
+    form.job_title = offer.title
+    form.company = offer.company
+    form.source_url = offer.source_url || offer.apply_url
+    form.job_description = offer.description
+    form.instructions = ''
+  } catch (cause) {
+    letters.error = cause instanceof ApiError ? cause.message : 'Offre introuvable.'
+  }
+}
 
 function clearError(): void {
   letters.error = null
@@ -92,7 +116,10 @@ async function generate(): Promise<void> {
   clearError()
 
   try {
-    const response = await letters.generate({ ...form })
+    const response = await letters.generate({
+      ...form,
+      offer_id: offerId.value ?? undefined,
+    })
     truncated.value = response.context_truncated
     await nextTick()
     resultSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -188,6 +215,18 @@ function formatCost(value: number): string {
           </button>
         </div>
       </Transition>
+
+      <div
+        v-if="linkedOffer"
+        class="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800"
+      >
+        <FileText :size="16" class="mt-0.5 shrink-0" />
+        <p class="flex-1">
+          Lettre liée à <strong>{{ linkedOffer.title }}</strong> chez
+          {{ linkedOffer.company }}. Le formulaire est prérempli depuis l’offre.
+        </p>
+        <RouterLink to="/offres" class="font-medium underline">Voir les offres</RouterLink>
+      </div>
 
       <FormSection
         title="Nouvelle lettre"

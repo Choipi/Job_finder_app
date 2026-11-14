@@ -149,6 +149,7 @@ export interface GeneratedLetterSummary {
   completion_tokens: number
   cost_usd: number
   duration_ms: number
+  offer_id: number | null
   created_at: string | null
   updated_at: string | null
 }
@@ -180,6 +181,7 @@ export interface LetterPayload {
   source_url: string
   instructions: string
   model?: string
+  offer_id?: number
 }
 
 export interface LlmCall {
@@ -293,6 +295,9 @@ export interface CollectionResult {
   >
 }
 
+export type OfferStatus = 'new' | 'to_apply' | 'applied' | 'interview' | 'rejected'
+export type ScoreStatus = 'scored' | 'filtered' | 'error' | null
+
 export interface OfferSummary {
   id: number
   employer_id: number | null
@@ -306,7 +311,11 @@ export interface OfferSummary {
   apply_url: string
   published_at: string | null
   score: number | null
-  status: string
+  score_status: ScoreStatus
+  score_reasons: string[]
+  score_blockers: string[]
+  scored_at: string | null
+  status: OfferStatus
   created_at: string | null
 }
 
@@ -319,9 +328,61 @@ export interface OfferDetail extends OfferSummary {
   updated_at: string | null
 }
 
+export interface OfferStats {
+  total: number
+  scored: number
+  applied: number
+}
+
+export interface ManualOfferPayload {
+  title: string
+  company: string
+  location: string
+  source_url: string
+  contract_type: string
+  remote: string
+  description: string
+}
+
 export interface CampaignFilter {
   active: boolean
   keywords: string[]
   locations: string[]
   remote: string
+}
+
+export interface ScoringSummary {
+  candidates: number
+  selected: number
+  scored: number
+  filtered: number
+  errors: number
+  remaining: number
+  skipped?: string
+}
+
+export interface ScanRun {
+  id: number
+  trigger: string
+  status: string
+  started_at: string | null
+  finished_at: string | null
+  employers_checked: number
+  offers_found: number
+  offers_new: number
+  offers_scored: number
+  errors: number
+  detail: Record<string, unknown>
+}
+
+export interface ScanResponse {
+  scan: ScanRun
+  campaign: Campaign
+}
+
+export interface SchedulerStatus {
+  enabled: boolean
+  running: boolean
+  next_run_at: string | null
+  interval_seconds: number
 }

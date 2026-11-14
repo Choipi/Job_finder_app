@@ -50,6 +50,7 @@ class LetterInput:
     job_description: str
     source_url: str = ""
     instructions: str = ""
+    offer_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -98,6 +99,7 @@ def generate_letter(
         source_url=letter_input.source_url,
         job_description=letter_input.job_description,
         instructions=letter_input.instructions,
+        offer_id=letter_input.offer_id,
         subject=subject,
         body=body,
         model=result.model,

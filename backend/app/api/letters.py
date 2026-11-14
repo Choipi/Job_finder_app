@@ -9,7 +9,7 @@ from ..extensions import db
 from ..letters.service import LetterInput, generate_letter
 from ..llm import get_llm_client
 from ..llm.catalog import is_known_model
-from ..models import Campaign, GeneratedLetter, Profile
+from ..models import Campaign, GeneratedLetter, Offer, Profile
 from ..serializers import letter_summary_to_dict, letter_to_dict
 from ..validation import Validator, request_payload
 
@@ -61,6 +61,9 @@ def create_letters_blueprint() -> Blueprint:
                 "instructions", "Consigne supplémentaire", max_length=1_000
             ),
             "model": data.text("model", "Modèle", max_length=120),
+            "offer_id": data.integer(
+                "offer_id", "Offre", minimum=0, maximum=10**9, default=0
+            ),
         }
 
         if values["job_description"] and len(values["job_description"]) < MIN_DESCRIPTION_LENGTH:
@@ -86,6 +89,15 @@ def create_letters_blueprint() -> Blueprint:
         campaign = Campaign.get_current()
         model = values["model"] or campaign.letter_model or settings.letter_model
 
+        offer_id = values["offer_id"] or None
+        if offer_id:
+            offer = db.session.get(Offer, offer_id)
+            if offer is None or offer.deleted_at is not None:
+                raise ValidationError(
+                    "Offre introuvable.",
+                    fields={"offer_id": "Cette offre n’existe plus."},
+                )
+
         if not is_known_model(model):
             raise ValidationError(
                 "Modèle inconnu.",
@@ -100,6 +112,7 @@ def create_letters_blueprint() -> Blueprint:
                 job_description=values["job_description"],
                 source_url=values["source_url"],
                 instructions=values["instructions"],
+                offer_id=offer_id,
             ),
             profile=profile,
             model=model,

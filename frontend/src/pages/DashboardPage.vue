@@ -91,20 +91,20 @@ const roadmap: RoadmapStep[] = [
   {
     phase: '5',
     title: 'Scrapers & APIs',
-    detail: 'WTTJ sitemap, Adzuna et Jooble en complément.',
+    detail: 'WTTJ, Adzuna et Jooble : optionnel, bloqué ou limité par les quotas.',
     state: 'current',
   },
   {
     phase: '6',
-    title: 'Scoring & scheduler',
-    detail: 'Déduplication, pré-filtre, scoring LLM, scans planifiés.',
-    state: 'next',
+    title: 'Scoring & scan',
+    detail: 'Pré-filtre, scoring LLM, scan manuel et scheduler.',
+    state: 'done',
   },
   {
     phase: '7',
     title: 'Interface offres',
-    detail: 'Cartes triées, filtres, trois boutons, statuts.',
-    state: 'next',
+    detail: 'Scores, statuts, suppression réversible, lettres liées.',
+    state: 'done',
   },
 ]
 
@@ -129,17 +129,17 @@ const stepDot: Record<StepState, string> = {
             :label="apiLabel"
             :pulse="health.status === 'loading'"
           />
-          <h2 class="mt-4 text-2xl font-semibold tracking-tight">La collecte employeurs est branchée.</h2>
+          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Les offres sont collectées, scorées et prêtes à candidater.</h2>
           <p class="mt-2 text-sm leading-6 text-neutral-600">
-            200 employeurs IA en watchlist, 17 ATS vérifiés, et les offres sont récupérées avec
-            leur lien de candidature d’origine. Les prochaines étapes ajoutent le scoring et les
-            job boards en complément.
+            La watchlist interroge les ATS des employeurs, le LLM note la pertinence avec des
+            raisons et des bloquants, et chaque offre mène à sa lettre ou à son lien de
+            candidature d’origine.
           </p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
-          <RouterLink to="/employeurs" class="btn-primary">
-            Gérer les employeurs
+          <RouterLink to="/offres" class="btn-primary">
+            Voir les offres
             <ArrowRight :size="16" />
           </RouterLink>
           <button
@@ -240,7 +240,7 @@ const stepDot: Record<StepState, string> = {
             <p class="mt-0.5 text-xs text-neutral-500">Sept étapes, chacune utilisable en l’état.</p>
           </div>
           <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-500">
-            4 / 7
+            6 / 7
           </span>
         </div>
 

@@ -15,6 +15,7 @@ from .health import create_health_blueprint
 from .letters import create_letters_blueprint
 from .llm import create_llm_blueprint
 from .profile import create_profile_blueprint
+from .scans import create_scans_blueprint
 
 
 def create_api_blueprint() -> Blueprint:
@@ -45,6 +46,11 @@ def create_api_blueprint() -> Blueprint:
                     "employer_discover": "/api/employers/discover",
                     "employer_collect": "/api/employers/collect",
                     "offers": "/api/offers",
+                    "manual_offer": "POST /api/offers",
+                    "offers_score": "/api/offers/score",
+                    "scan": "/api/scan",
+                    "scans": "/api/scans",
+                    "scheduler": "/api/scheduler",
                 },
             }
         )
@@ -55,6 +61,7 @@ def create_api_blueprint() -> Blueprint:
     api.register_blueprint(create_letters_blueprint())
     api.register_blueprint(create_llm_blueprint())
     api.register_blueprint(create_employers_blueprint())
+    api.register_blueprint(create_scans_blueprint())
     return api
 
 

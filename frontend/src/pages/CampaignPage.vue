@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { AlertCircle, AlertTriangle, Check, LoaderCircle, Save } from '@lucide/vue'
+import { AlertCircle, AlertTriangle, Check, LoaderCircle, PlayCircle, Save } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 
 import { ApiError } from '@/api/client'
@@ -9,6 +9,7 @@ import FormSection from '@/components/FormSection.vue'
 import StatusPill from '@/components/StatusPill.vue'
 import TagInput from '@/components/TagInput.vue'
 import { messageOf, useCampaignStore } from '@/stores/campaign'
+import { useScansStore } from '@/stores/scans'
 
 type PillTone = 'ok' | 'warn' | 'error' | 'muted'
 
@@ -18,6 +19,7 @@ interface CampaignForm extends Omit<CampaignPayload, 'starts_on' | 'ends_on'> {
 }
 
 const store = useCampaignStore()
+const scans = useScansStore()
 
 const CONTRACT_TYPES = ['CDI', 'CDD', 'Freelance', 'Stage', 'Alternance', 'Intérim'] as const
 
@@ -156,6 +158,40 @@ async function load(): Promise<void> {
   } catch (cause) {
     notify('error', messageOf(cause))
   }
+  try {
+    await scans.loadScheduler()
+  } catch {
+    // Scheduler status is optional.
+  }
+}
+
+async function runScan(): Promise<void> {
+  try {
+    const response = await scans.runScan({
+      collect_limit: 3,
+      max_offers: 50,
+      score_limit: 10,
+    })
+    applyCampaign(response.campaign)
+    notify(
+      'ok',
+      `Scan terminé : ${response.scan.employers_checked} employeurs, ${response.scan.offers_new} nouvelles offres, ${response.scan.offers_scored} scorées.`,
+    )
+  } catch (cause) {
+    notify('error', messageOf(cause))
+  }
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) {
+    return 'jamais'
+  }
+  return new Date(value).toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function reset(): void {
@@ -358,6 +394,68 @@ onMounted(load)
             </label>
           </div>
         </div>
+      </div>
+    </FormSection>
+
+    <FormSection
+      title="Scan &amp; automatisation"
+      description="Le scan collecte les employeurs prêts, puis score les nouvelles offres avec le modèle choisi. Il peut être lancé à la main ou planifié pendant la campagne."
+    >
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+          <p class="label">Dernier scan</p>
+          <p class="mt-1 text-sm font-medium">{{ formatDateTime(store.campaign?.last_scan_at ?? null) }}</p>
+          <p class="mt-0.5 text-[11px] text-neutral-500">campagne en cours</p>
+        </div>
+        <div class="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+          <p class="label">Scan automatique</p>
+          <p class="mt-1 flex items-center gap-2 text-sm font-medium">
+            <StatusPill
+              :tone="scans.scheduler?.running ? 'ok' : 'muted'"
+              :label="scans.scheduler?.running ? 'Actif' : 'Inactif'"
+            />
+          </p>
+          <p class="mt-0.5 text-[11px] text-neutral-500">
+            <template v-if="scans.scheduler?.running">
+              Toutes les {{ scans.scheduler.interval_seconds }} s · prochain
+              {{ formatDateTime(scans.scheduler.next_run_at) }}
+            </template>
+            <template v-else>
+              Active <code class="font-mono">SCHEDULER_ENABLED=true</code>
+            </template>
+          </p>
+        </div>
+        <div class="rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+          <p class="label">Par scan</p>
+          <p class="mt-1 text-sm font-medium">3 employeurs</p>
+          <p class="mt-0.5 text-[11px] text-neutral-500">10 offres scorées max</p>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+        <p class="text-xs text-neutral-500">
+          Un scan manuel peut prendre plusieurs minutes : collecte réseau puis appels LLM.
+        </p>
+        <button
+          type="button"
+          class="btn-primary"
+          :disabled="scans.scanning"
+          @click="runScan"
+        >
+          <LoaderCircle v-if="scans.scanning" :size="15" class="animate-spin" />
+          <PlayCircle v-else :size="15" />
+          {{ scans.scanning ? 'Scan en cours…' : 'Lancer un scan' }}
+        </button>
+      </div>
+
+      <div
+        v-if="scans.lastScan"
+        class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800"
+      >
+        Scan #{{ scans.lastScan.id }} · {{ scans.lastScan.status }} ·
+        {{ scans.lastScan.offers_new }} nouvelles offres ·
+        {{ scans.lastScan.offers_scored }} scorées ·
+        {{ scans.lastScan.errors }} erreur(s)
       </div>
     </FormSection>
 
