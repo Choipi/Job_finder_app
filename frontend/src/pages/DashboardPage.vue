@@ -6,7 +6,7 @@ import {
   Check,
   Database,
   KeyRound,
-  Radar,
+  Building2,
   RefreshCw,
   Server,
   ShieldCheck,
@@ -84,15 +84,15 @@ const roadmap: RoadmapStep[] = [
   },
   {
     phase: '4',
-    title: 'Connecteurs APIs',
-    detail: 'France Travail, Adzuna, Welcome to the Jungle.',
-    state: 'current',
+    title: 'Employeurs & ATS',
+    detail: 'Watchlist, détection ATS, collecte directe des offres.',
+    state: 'done',
   },
   {
     phase: '5',
-    title: 'Scrapers',
-    detail: 'HelloWork, APEC, Indeed, LinkedIn.',
-    state: 'next',
+    title: 'Scrapers & APIs',
+    detail: 'WTTJ sitemap, Adzuna et Jooble en complément.',
+    state: 'current',
   },
   {
     phase: '6',
@@ -129,16 +129,17 @@ const stepDot: Record<StepState, string> = {
             :label="apiLabel"
             :pulse="health.status === 'loading'"
           />
-          <h2 class="mt-4 text-2xl font-semibold tracking-tight">Le LLM rédige les lettres.</h2>
+          <h2 class="mt-4 text-2xl font-semibold tracking-tight">La collecte employeurs est branchée.</h2>
           <p class="mt-2 text-sm leading-6 text-neutral-600">
-            Le profil, le CV et la campagne alimentent un prompt versionné. Chaque appel est
-            journalisé avec ses tokens, sa latence et son coût, et la lettre reste éditable.
+            200 employeurs IA en watchlist, 17 ATS vérifiés, et les offres sont récupérées avec
+            leur lien de candidature d’origine. Les prochaines étapes ajoutent le scoring et les
+            job boards en complément.
           </p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
-          <RouterLink to="/lettres" class="btn-primary">
-            Générer une lettre
+          <RouterLink to="/employeurs" class="btn-primary">
+            Gérer les employeurs
             <ArrowRight :size="16" />
           </RouterLink>
           <button
@@ -215,14 +216,17 @@ const stepDot: Record<StepState, string> = {
       <article class="card p-5">
         <div class="flex items-start justify-between">
           <div class="grid h-9 w-9 place-items-center rounded-xl bg-neutral-100 text-neutral-600">
-            <Radar :size="18" :stroke-width="1.9" />
+            <Building2 :size="18" :stroke-width="1.9" />
           </div>
-          <StatusPill tone="muted" label="Phase 4" />
+          <StatusPill
+            :tone="health.data?.features.employers ? 'ok' : 'muted'"
+            :label="health.data?.features.employers ? 'Opérationnelle' : 'Phase 4'"
+          />
         </div>
-        <p class="label mt-4">Sources</p>
-        <p class="mt-1 text-lg font-semibold tracking-tight">7 connecteurs</p>
+        <p class="label mt-4">Employeurs</p>
+        <p class="mt-1 text-lg font-semibold tracking-tight">200 en watchlist</p>
         <p class="mt-1 text-xs leading-5 text-neutral-500">
-          France Travail, Adzuna, WTTJ, HelloWork, APEC, Indeed, LinkedIn.
+          IA France · 17 ATS vérifiés · collecte directe et lien employeur.
         </p>
       </article>
     </section>
@@ -236,7 +240,7 @@ const stepDot: Record<StepState, string> = {
             <p class="mt-0.5 text-xs text-neutral-500">Sept étapes, chacune utilisable en l’état.</p>
           </div>
           <span class="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-500">
-            3 / 7
+            4 / 7
           </span>
         </div>
 

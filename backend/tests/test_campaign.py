@@ -33,7 +33,7 @@ def test_get_campaign_returns_defaults(client):
     assert campaign["keywords"] == []
     assert campaign["status"] in {"active", "scheduled"}
     assert campaign["days_remaining"] is not None
-    assert "france_travail" in campaign["sources"]
+    assert campaign["sources"] == []
 
 
 def test_update_campaign_persists(client):

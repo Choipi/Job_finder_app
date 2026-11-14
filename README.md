@@ -8,7 +8,7 @@ Le projet est aussi un support d'apprentissage : les étapes qui utilisent un LL
 ( scoring et rédaction ) sont isolées dans des modules dédiés, avec des prompts en
 fichiers séparés et un client mockable pour les tests.
 
-## État actuel — phases 1 à 3 terminées
+## État actuel — phases 1 à 4 terminées
 
 - [x] Socle Flask : factory, configuration centralisée, CORS, erreurs JSON
 - [x] `GET /api/health` : état du service, modèles configurés, aucune fuite de clé
@@ -20,11 +20,14 @@ fichiers séparés et un client mockable pour les tests.
 - [x] Client LLM OpenCode Go : retries, timeout, JSON mode, coût, télémétrie
 - [x] Génération de lettres, sortie éditable, historique, suppression
 - [x] Sélection des modèles et test de connexion dans les Réglages
-- [x] 47 tests backend (profil, CV, campagne, LLM, lettres, health)
+- [x] Watchlist de 200 employeurs IA, découverte d'ATS, collecte directe
+- [x] Adaptateurs Ashby, Greenhouse, Lever, SmartRecruiters, Workable
+- [x] Offres normalisées, dédupliquées, avec lien de candidature employeur
+- [x] 60 tests backend (profil, CV, campagne, LLM, lettres, ATS, employeurs)
 
-Prochaines phases : connecteurs de collecte, scoring des offres, interface des offres.
+Prochaines phases : job boards en complément, scoring LLM, scheduler, interface avancée.
 
-> Guide pédagogique des appels LLM : [`docs/llm.md`](docs/llm.md).
+> Guides : [`docs/llm.md`](docs/llm.md) pour les appels LLM, [`docs/employers.md`](docs/employers.md) pour la collecte employeurs.
 
 ## Stack
 
@@ -84,7 +87,7 @@ curl http://127.0.0.1:5173/api/health   # via le proxy Vite
 ## Tests et build
 
 ```bash
-make test    # pytest, 47 tests
+make test    # pytest, 60 tests
 make build   # vue-tsc + build de production
 ```
 
@@ -103,6 +106,13 @@ make build   # vue-tsc + build de production
 | GET | `/api/models` | catalogue des modèles et tarifs |
 | POST | `/api/llm/test` | test de connexion clé + endpoint + modèle |
 | GET | `/api/llm/usage` | tokens, coût estimé et derniers appels |
+| GET / POST | `/api/employers` | watchlist / ajouter un employeur |
+| PATCH | `/api/employers/<id>` | activer, renommer, changer l'URL carrières |
+| POST | `/api/employers/seed` | charger la watchlist IA France (200) |
+| POST | `/api/employers/discover` | détecter les ATS par lot |
+| POST | `/api/employers/collect` | collecter les offres par lot |
+| POST | `/api/employers/<id>/collect` | collecter un employeur |
+| GET | `/api/offers` | offres collectées, filtre campagne optionnel |
 
 Les erreurs de validation renvoient `400` avec un objet `fields` :
 
@@ -134,7 +144,9 @@ backend/
     services/cv.py     # stockage du PDF + extraction pypdf
     llm/               # client OpenCode Go, mock, catalogue, télémétrie
     letters/           # prompt versionné + orchestration de génération
-    api/               # blueprints health, profile, campaign, letters, llm
+    employers/         # watchlist, seed IA France, découverte ATS
+    collectors/ats/    # adaptateurs Ashby, Greenhouse, Lever, etc.
+    api/               # blueprints health, profile, campaign, letters, llm, employers
   tests/               # 47 tests, dont client HTTP simulé et PDF générés
   run.py
 frontend/
@@ -156,6 +168,20 @@ frontend/
 Pour repartir de zéro, arrêter Flask puis supprimer `backend/instance/job_finder.db`
 et `backend/uploads/cv/`. Le schéma et la campagne par défaut sont recréés au
 prochain démarrage.
+
+### Watchlist employeurs
+
+La watchlist de test (200 employeurs IA en France, dont 17 ATS vérifiés) est
+chargée depuis l'interface **Employeurs**, ou en CLI :
+
+```bash
+cd backend
+flask --app run:app employers-seed
+flask --app run:app employers-discover --limit 10
+flask --app run:app employers-collect --limit 5 --max-offers 50
+```
+
+Aucune clé API n'est nécessaire pour les ATS : ce sont des endpoints publics.
 
 ## Configuration
 
@@ -197,10 +223,10 @@ l'historique et la télémétrie.
 1. **Socle** — fait.
 2. **Profil & campagne** — fait.
 3. **LLM & lettres** — fait.
-4. **Connecteurs APIs** — France Travail, Adzuna, Welcome to the Jungle.
-5. **Scrapers** — HelloWork, APEC, Indeed, LinkedIn.
-6. **Scoring & scheduler** — déduplication, pré-filtre, scoring, scans planifiés.
-7. **Interface offres** — cartes, filtres, trois actions, statuts.
+4. **Employeurs & ATS** — fait : watchlist, découverte, collecte directe.
+5. **Job boards & APIs** — WTTJ sitemap, Adzuna et Jooble en complément.
+6. **Scoring & scheduler** — déduplication avancée, pré-filtre, scoring, scans planifiés.
+7. **Interface offres avancée** — score, suppressions, lettres, statuts.
 
 ## Collecte : règles assumées
 

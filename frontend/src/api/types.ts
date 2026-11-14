@@ -12,6 +12,8 @@ export interface HealthFeatures {
   database: boolean
   profile: boolean
   letters: boolean
+  employers: boolean
+  offers: boolean
   collectors: boolean
   scoring: boolean
   scheduler: boolean
@@ -216,4 +218,110 @@ export interface LlmTestResult {
     completion_tokens: number
     cost_usd: number
   }
+}
+
+export interface EmployerSource {
+  id: number
+  name: string
+  domain: string
+  sector: string
+  country: string
+  city: string
+  ats_type: string
+  ats_slug: string
+  careers_url: string
+  enabled: boolean
+  origin: string
+  status: 'pending' | 'ready' | 'no_ats' | 'error'
+  last_checked_at: string | null
+  last_error: string
+  offer_count: number
+  created_at: string | null
+  updated_at: string | null
+}
+
+export interface EmployerStats {
+  total: number
+  enabled: number
+  ready: number
+  pending: number
+  no_ats: number
+  errors: number
+  offers: number
+}
+
+export interface EmployersResponse {
+  employers: EmployerSource[]
+  stats: EmployerStats
+}
+
+export interface DiscoveryResult {
+  checked: number
+  ready: number
+  no_ats: number
+  errors: number
+  results: Array<{
+    id: number
+    name: string
+    status: string
+    ats_type: string
+    ats_slug: string
+    error: string
+  }>
+}
+
+export interface CollectionOutcome {
+  found: number
+  new: number
+  updated: number
+  error: string
+}
+
+export interface CollectionResult {
+  employers: number
+  found: number
+  new: number
+  updated: number
+  errors: number
+  remaining: number
+  results: Array<
+    {
+      id: number
+      name: string
+      ats: string
+    } & CollectionOutcome
+  >
+}
+
+export interface OfferSummary {
+  id: number
+  employer_id: number | null
+  source: string
+  title: string
+  company: string
+  location: string
+  remote: string
+  contract_type: string
+  salary: string
+  apply_url: string
+  published_at: string | null
+  score: number | null
+  status: string
+  created_at: string | null
+}
+
+export interface OfferDetail extends OfferSummary {
+  description: string
+  source_url: string
+  external_id: string
+  score_reasons: string[]
+  last_seen_at: string | null
+  updated_at: string | null
+}
+
+export interface CampaignFilter {
+  active: boolean
+  keywords: string[]
+  locations: string[]
+  remote: string
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { AlertCircle, AlertTriangle, Check, LoaderCircle, Save } from '@lucide/vue'
+import { RouterLink } from 'vue-router'
 
 import { ApiError } from '@/api/client'
 import type { Campaign, CampaignPayload, CampaignStatus } from '@/api/types'
@@ -403,8 +404,15 @@ onMounted(load)
       <p v-if="store.sources.length === 0" class="field-hint">Chargement du catalogue…</p>
       <p v-if="fieldErrors.sources" class="field-error">{{ fieldErrors.sources }}</p>
       <p class="field-hint">
-        Une source sélectionnée ne collecte encore rien : les connecteurs arrivent aux phases 4 et 5.
+        Les job boards ci-dessus seront branchés en phase 5 ; ils sont optionnels. Les offres
+        actuelles proviennent des employeurs suivis.
       </p>
+      <RouterLink
+        to="/employeurs"
+        class="mt-2 inline-flex text-xs font-medium text-emerald-700 hover:text-emerald-800"
+      >
+        Gérer la watchlist d’employeurs →
+      </RouterLink>
     </FormSection>
 
     <FormSection

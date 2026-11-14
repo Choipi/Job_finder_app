@@ -56,7 +56,7 @@ def create_campaign_blueprint() -> Blueprint:
                 "Sources",
                 allowed=SOURCE_IDS,
                 max_items=len(SOURCE_IDS),
-                required=True,
+                required=False,
             ),
             "starts_on": data.date("starts_on", "Date de début"),
             "ends_on": data.date("ends_on", "Date de fin"),

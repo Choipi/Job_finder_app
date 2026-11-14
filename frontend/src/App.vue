@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { computed } from 'vue'
-import { Briefcase, FileText, LayoutDashboard, Settings, Target, UserRound } from '@lucide/vue'
+import { Briefcase, Building2, FileText, LayoutDashboard, Settings, Target, UserRound } from '@lucide/vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 
 interface NavItem {
@@ -15,7 +15,8 @@ const route = useRoute()
 
 const nav: NavItem[] = [
   { to: '/', label: 'Tableau de bord', icon: LayoutDashboard },
-  { to: '/offres', label: 'Offres', icon: Briefcase, phase: '7' },
+  { to: '/offres', label: 'Offres', icon: Briefcase },
+  { to: '/employeurs', label: 'Employeurs', icon: Building2 },
   { to: '/lettres', label: 'Lettres', icon: FileText },
   { to: '/profil', label: 'Profil', icon: UserRound },
   { to: '/campagne', label: 'Campagne', icon: Target },

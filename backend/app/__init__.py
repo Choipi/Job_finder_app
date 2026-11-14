@@ -15,6 +15,7 @@ from werkzeug.exceptions import HTTPException
 
 from . import models  # noqa: F401 - imported so SQLAlchemy knows the tables
 from .api import register_blueprints
+from .cli import register_cli
 from .config import Settings
 from .errors import ValidationError
 from .extensions import db
@@ -45,6 +46,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     db.init_app(app)
 
     register_blueprints(app)
+    register_cli(app)
     _register_error_handlers(app)
 
     with app.app_context():

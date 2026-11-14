@@ -9,7 +9,6 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from .extensions import db
-from .sources import SOURCES
 
 
 def utcnow() -> datetime:
@@ -69,7 +68,7 @@ class Campaign(db.Model):
     sources = db.Column(
         db.JSON,
         nullable=False,
-        default=lambda: [source["id"] for source in SOURCES if source["enabled_by_default"]],
+        default=list,
     )
     starts_on = db.Column(db.Date, nullable=True)
     ends_on = db.Column(db.Date, nullable=True)
@@ -103,9 +102,7 @@ class Campaign(db.Model):
                 contract_types=["CDI"],
                 remote="any",
                 radius_km=30,
-                sources=[
-                    source["id"] for source in SOURCES if source["enabled_by_default"]
-                ],
+                sources=[],
                 starts_on=today,
                 ends_on=today + timedelta(days=30),
                 frequency_hours=6,
@@ -179,3 +176,80 @@ class LLMCall(db.Model):
     duration_ms = db.Column(db.Integer, nullable=False, default=0)
     error = db.Column(db.Text, nullable=False, default="")
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class EmployerSource(db.Model):
+    """An employer whose careers/ATS feed is polled directly.
+
+    A source is discovered one of three ways:
+    - seeded from a curated list (AI France for the test watchlist),
+    - added manually by the user,
+    - detected from an aggregator's apply_url in a later phase.
+    """
+
+    __tablename__ = "employer_source"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False, default="")
+    domain = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    sector = db.Column(db.String(80), nullable=False, default="")
+    country = db.Column(db.String(2), nullable=False, default="FR")
+    city = db.Column(db.String(120), nullable=False, default="")
+
+    ats_type = db.Column(db.String(40), nullable=False, default="")
+    ats_slug = db.Column(db.String(200), nullable=False, default="")
+    careers_url = db.Column(db.String(700), nullable=False, default="")
+
+    enabled = db.Column(db.Boolean, nullable=False, default=True)
+    origin = db.Column(db.String(30), nullable=False, default="manual")
+    # pending | ready | no_ats | error
+    status = db.Column(db.String(20), nullable=False, default="pending")
+    last_checked_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    last_error = db.Column(db.String(500), nullable=False, default="")
+    offer_count = db.Column(db.Integer, nullable=False, default=0)
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )
+
+
+class Offer(db.Model):
+    """Normalized job offer.
+
+    The fingerprint is the deduplication key across sources. In phase 4 all
+    offers come from employer ATS feeds; job boards will reuse the same table.
+    """
+
+    __tablename__ = "offer"
+
+    id = db.Column(db.Integer, primary_key=True)
+    employer_id = db.Column(
+        db.Integer, db.ForeignKey("employer_source.id"), nullable=True, index=True
+    )
+
+    source = db.Column(db.String(40), nullable=False, default="employer_ats")
+    external_id = db.Column(db.String(200), nullable=False, default="")
+    title = db.Column(db.String(300), nullable=False, default="")
+    company = db.Column(db.String(200), nullable=False, default="")
+    location = db.Column(db.String(200), nullable=False, default="")
+    remote = db.Column(db.String(20), nullable=False, default="")
+    contract_type = db.Column(db.String(80), nullable=False, default="")
+    salary = db.Column(db.String(120), nullable=False, default="")
+    description = db.Column(db.Text, nullable=False, default="")
+
+    source_url = db.Column(db.String(700), nullable=False, default="")
+    apply_url = db.Column(db.String(700), nullable=False, default="")
+    published_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    last_seen_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    fingerprint = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    status = db.Column(db.String(20), nullable=False, default="new")
+    score = db.Column(db.Integer, nullable=True)
+    score_reasons = db.Column(db.JSON, nullable=False, default=list)
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow
+    )

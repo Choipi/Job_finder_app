@@ -10,6 +10,7 @@ from __future__ import annotations
 from flask import Blueprint, Flask, current_app, jsonify
 
 from .campaign import create_campaign_blueprint
+from .employers import create_employers_blueprint
 from .health import create_health_blueprint
 from .letters import create_letters_blueprint
 from .llm import create_llm_blueprint
@@ -39,6 +40,11 @@ def create_api_blueprint() -> Blueprint:
                     "models": "/api/models",
                     "llm_test": "/api/llm/test",
                     "llm_usage": "/api/llm/usage",
+                    "employers": "/api/employers",
+                    "employer_seed": "/api/employers/seed",
+                    "employer_discover": "/api/employers/discover",
+                    "employer_collect": "/api/employers/collect",
+                    "offers": "/api/offers",
                 },
             }
         )
@@ -48,6 +54,7 @@ def create_api_blueprint() -> Blueprint:
     api.register_blueprint(create_campaign_blueprint())
     api.register_blueprint(create_letters_blueprint())
     api.register_blueprint(create_llm_blueprint())
+    api.register_blueprint(create_employers_blueprint())
     return api
 
 

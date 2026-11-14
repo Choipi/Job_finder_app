@@ -16,7 +16,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   json?: unknown
   form?: FormData
   timeoutMs?: number
@@ -85,11 +85,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
 export const apiGet = <T>(path: string): Promise<T> => request<T>(path)
 
-export const apiPost = <T>(path: string, json: unknown): Promise<T> =>
-  request<T>(path, { method: 'POST', json })
+export const apiPost = <T>(path: string, json: unknown, timeoutMs?: number): Promise<T> =>
+  request<T>(path, { method: 'POST', json, timeoutMs })
 
 export const apiPut = <T>(path: string, json: unknown): Promise<T> =>
   request<T>(path, { method: 'PUT', json })
+
+export const apiPatch = <T>(path: string, json: unknown): Promise<T> =>
+  request<T>(path, { method: 'PATCH', json })
 
 export const apiPostForm = <T>(path: string, form: FormData): Promise<T> =>
   request<T>(path, { method: 'POST', form, timeoutMs: UPLOAD_TIMEOUT_MS })

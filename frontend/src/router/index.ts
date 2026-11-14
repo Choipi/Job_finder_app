@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import CampaignPage from '@/pages/CampaignPage.vue'
 import DashboardPage from '@/pages/DashboardPage.vue'
+import EmployersPage from '@/pages/EmployersPage.vue'
 import LettersPage from '@/pages/LettersPage.vue'
 import OffersPage from '@/pages/OffersPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
@@ -33,6 +34,15 @@ const router = createRouter({
       meta: {
         title: 'Offres',
         description: 'Les opportunités collectées pour ta campagne, triées par pertinence.',
+      },
+    },
+    {
+      path: '/employeurs',
+      name: 'employers',
+      component: EmployersPage,
+      meta: {
+        title: 'Employeurs',
+        description: 'Watchlist, détection des ATS et collecte directe des offres.',
       },
     },
     {

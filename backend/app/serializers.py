@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from .config import Settings
-from .models import Campaign, GeneratedLetter, LLMCall, Profile
+from .models import Campaign, EmployerSource, GeneratedLetter, LLMCall, Offer, Profile
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -107,3 +107,59 @@ def llm_call_to_dict(call: LLMCall) -> dict[str, object]:
         "error": call.error,
         "created_at": _iso(call.created_at),
     }
+
+
+def employer_to_dict(employer: EmployerSource) -> dict[str, object]:
+    return {
+        "id": employer.id,
+        "name": employer.name,
+        "domain": employer.domain,
+        "sector": employer.sector,
+        "country": employer.country,
+        "city": employer.city,
+        "ats_type": employer.ats_type,
+        "ats_slug": employer.ats_slug,
+        "careers_url": employer.careers_url,
+        "enabled": employer.enabled,
+        "origin": employer.origin,
+        "status": employer.status,
+        "last_checked_at": _iso(employer.last_checked_at),
+        "last_error": employer.last_error,
+        "offer_count": employer.offer_count,
+        "created_at": _iso(employer.created_at),
+        "updated_at": _iso(employer.updated_at),
+    }
+
+
+def offer_summary_to_dict(offer: Offer) -> dict[str, object]:
+    return {
+        "id": offer.id,
+        "employer_id": offer.employer_id,
+        "source": offer.source,
+        "title": offer.title,
+        "company": offer.company,
+        "location": offer.location,
+        "remote": offer.remote,
+        "contract_type": offer.contract_type,
+        "salary": offer.salary,
+        "apply_url": offer.apply_url,
+        "published_at": _iso(offer.published_at),
+        "score": offer.score,
+        "status": offer.status,
+        "created_at": _iso(offer.created_at),
+    }
+
+
+def offer_to_dict(offer: Offer) -> dict[str, object]:
+    payload = offer_summary_to_dict(offer)
+    payload.update(
+        {
+            "description": offer.description,
+            "source_url": offer.source_url,
+            "external_id": offer.external_id,
+            "score_reasons": list(offer.score_reasons or []),
+            "last_seen_at": _iso(offer.last_seen_at),
+            "updated_at": _iso(offer.updated_at),
+        }
+    )
+    return payload
